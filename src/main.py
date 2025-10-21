@@ -1,0 +1,102 @@
+"""Main orchestration module for Auto-Tube."""
+
+import asyncio
+import argparse
+
+from src.core.config import get_settings
+from src.core.logging import setup_logging, get_logger
+from src.core.database import init_db
+from src.pipeline.orchestrator import VideoGenerationPipeline
+
+setup_logging()
+logger = get_logger(__name__)
+settings = get_settings()
+
+
+async def main() -> None:
+    """Main entry point."""
+    parser = argparse.ArgumentParser(description="Auto-Tube - Automated YouTube video generation")
+    parser.add_argument("--topic", type=str, help="Video topic")
+    parser.add_argument("--category", type=str, default="technology", help="Video category")
+    parser.add_argument("--batch", type=int, help="Generate multiple videos")
+    parser.add_argument("--test", action="store_true", help="Run in test mode")
+
+    args = parser.parse_args()
+
+    logger.info("=" * 70)
+    logger.info("AUTO-TUBE - Automated YouTube Video Generation Service")
+    logger.info("=" * 70)
+
+    # Initialize database
+    try:
+        await init_db()
+        logger.info("✓ Database initialized")
+    except Exception as e:
+        logger.error(f"✗ Database initialization failed: {e}")
+        return
+
+    # Create pipeline
+    pipeline = VideoGenerationPipeline()
+
+    try:
+        if args.batch:
+            # Generate multiple videos
+            logger.info(f"Generating batch of {args.batch} videos...")
+            results = await pipeline.generate_batch_videos(
+                count=args.batch,
+                category=args.category,
+            )
+
+            successful = sum(1 for r in results if r.get("status") == "success")
+            logger.info(f"\nBatch complete: {successful}/{args.batch} videos generated")
+
+        elif args.test:
+            # Test mode - just collect and analyze
+            logger.info("Running in test mode...")
+            from src.collectors.news_collector import NewsCollector
+            from src.analyzers.trend_analyzer import TrendAnalyzer
+
+            collector = NewsCollector()
+            analyzer = TrendAnalyzer()
+
+            articles = await collector.collect_tech_news(max_results=10)
+            logger.info(f"✓ Collected {len(articles)} articles")
+
+            if articles:
+                topics = await analyzer.select_best_topics(articles, max_topics=3)
+                logger.info(f"✓ Top topics:")
+                for article, score in topics:
+                    logger.info(f"  - {article.title[:60]}... (score: {score.score:.2f})")
+
+        else:
+            # Generate single video
+            topic = args.topic or "最新テクノロジーニュース"
+            logger.info(f"Generating video for topic: {topic}")
+
+            result = await pipeline.generate_complete_video(
+                topic=topic,
+                category=args.category,
+            )
+
+            if result.get("status") == "success":
+                logger.info("\n" + "=" * 70)
+                logger.info("✓ VIDEO GENERATION SUCCESSFUL")
+                logger.info("=" * 70)
+                logger.info(f"Video ID: {result['video_id']}")
+                logger.info(f"Title: {result['title']}")
+                logger.info(f"Video: {result.get('video_path')}")
+                logger.info(f"Thumbnail: {result.get('thumbnail_path')}")
+                logger.info("=" * 70)
+            else:
+                logger.error(f"✗ Video generation failed: {result.get('message')}")
+
+    except KeyboardInterrupt:
+        logger.info("\nOperation cancelled by user")
+    except Exception as e:
+        logger.error(f"Error: {e}", exc_info=True)
+
+    logger.info("\nAuto-Tube finished")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
