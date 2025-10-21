@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.so
+*.pyo
+*.pyd
+*.pyi
 .Python
 build/
 develop-eggs/
@@ -21,21 +24,27 @@ wheels/
 *.egg
 
 # Virtual Environment
+.env
+.venv/
 venv/
 ENV/
 env/
-.venv
 
-# IDE
+# Node
+node_modules/
+.next/
+
+# Editor
 .vscode/
+.DS_Store
+
+# Misc
 .idea/
 *.swp
 *.swo
 *~
-.DS_Store
 
 # Environment Variables
-.env
 .env.local
 
 # Data

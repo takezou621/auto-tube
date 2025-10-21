@@ -1,0 +1,36 @@
+[tool.poetry]
+name = "auto-tube-backend"
+version = "0.1.0"
+description = "不動産投資系YouTube動画自動生成サービスのバックエンドAPI"
+authors = ["AutoTube Dev Team <dev@auto-tube.local>"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.114.0"
+uvicorn = {extras = ["standard"], version = "^0.30.0"}
+pydantic-settings = "^2.5.0"
+httpx = "^0.28.1"
+elevenlabs = "^2.16.0"
+prisma = "^0.13.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.0"
+pytest-asyncio = "^0.23.0"
+ruff = "^0.5.0"
+yamllint = "^1.37.1"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = ["app"]
+
+[tool.ruff]
+line-length = 100
+src = ["app", "tests"]
+select = ["E", "F", "I", "UP", "N"]
+ignore = ["E501"]
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
